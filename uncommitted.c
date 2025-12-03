@@ -41,8 +41,11 @@ typedef struct {
     char *path;            // dynamically allocated
     char *branch;          // dynamically allocated
     char *remote_branch;   // dynamically allocated
+    char *remote_url;      // dynamically allocated (e.g., GitHub URL)
     int ahead;
     int behind;
+    int has_remote;        // 1 if repo has a remote configured
+    int is_pushed;         // 1 if current branch exists on remote
     FileChange *changes;   // dynamic array
     int change_count;
     int change_capacity;
@@ -69,8 +72,11 @@ void init_git_repo(GitRepo *repo) {
     repo->path = NULL;
     repo->branch = NULL;
     repo->remote_branch = NULL;
+    repo->remote_url = NULL;
     repo->ahead = 0;
     repo->behind = 0;
+    repo->has_remote = 0;
+    repo->is_pushed = 0;
     repo->changes = malloc(INITIAL_FILES_CAPACITY * sizeof(FileChange));
     repo->change_count = 0;
     repo->change_capacity = INITIAL_FILES_CAPACITY;
@@ -122,6 +128,7 @@ void free_git_repo(GitRepo *repo) {
     free(repo->path);
     free(repo->branch);
     free(repo->remote_branch);
+    free(repo->remote_url);
     for (int i = 0; i < repo->change_count; i++) {
         free_file_change(&repo->changes[i]);
     }
@@ -204,7 +211,7 @@ void get_branch_info(const char *repo_path, GitRepo *repo) {
     ssize_t line_len;
 
     // Get current branch
-    cmd_len = strlen(repo_path) + 100;
+    cmd_len = strlen(repo_path) + 150;
     cmd = malloc(cmd_len);
     snprintf(cmd, cmd_len, "cd \"%s\" && git rev-parse --abbrev-ref HEAD 2>/dev/null", repo_path);
     fp = popen(cmd, "r");
@@ -216,6 +223,18 @@ void get_branch_info(const char *repo_path, GitRepo *repo) {
         pclose(fp);
     }
 
+    // Check if remote 'origin' exists and get its URL
+    snprintf(cmd, cmd_len, "cd \"%s\" && git remote get-url origin 2>/dev/null", repo_path);
+    fp = popen(cmd, "r");
+    if (fp) {
+        if ((line_len = getline(&line, &line_cap, fp)) > 0) {
+            line[strcspn(line, "\n")] = 0;
+            repo->remote_url = strdup(line);
+            repo->has_remote = 1;
+        }
+        pclose(fp);
+    }
+
     // Get remote tracking branch
     snprintf(cmd, cmd_len, "cd \"%s\" && git rev-parse --abbrev-ref --symbolic-full-name @{u} 2>/dev/null", repo_path);
     fp = popen(cmd, "r");
@@ -223,8 +242,22 @@ void get_branch_info(const char *repo_path, GitRepo *repo) {
         if ((line_len = getline(&line, &line_cap, fp)) > 0) {
             line[strcspn(line, "\n")] = 0;
             repo->remote_branch = strdup(line);
+            repo->is_pushed = 1;  // Branch has upstream, so it's been pushed
         }
         pclose(fp);
+    }
+
+    // If no tracking branch but has remote, check local refs for origin/<branch>
+    // This avoids network calls by checking cached remote-tracking refs
+    if (!repo->is_pushed && repo->has_remote && repo->branch) {
+        snprintf(cmd, cmd_len, "cd \"%s\" && git rev-parse --verify --quiet refs/remotes/origin/%s 2>/dev/null", repo_path, repo->branch);
+        fp = popen(cmd, "r");
+        if (fp) {
+            if ((line_len = getline(&line, &line_cap, fp)) > 0 && line_len > 1) {
+                repo->is_pushed = 1;  // Branch exists in cached remote refs
+            }
+            pclose(fp);
+        }
     }
 
     // Get ahead/behind counts
@@ -319,18 +352,51 @@ void print_repo_info(GitRepo *repo, int box_width) {
     for (int i = len; i < box_width - 2; i++) printf(" ");
     printf("%s%s%s\n", CYAN, VERT, RESET);
 
+    // Remote/Push status
+    printf("%s%s%s  %sRemote:%s ", CYAN, VERT, RESET, BOLD, RESET);
+    len = 10;
+    if (!repo->has_remote) {
+        printf("%sNo remote configured%s", RED, RESET);
+        len += 20;  // "No remote configured"
+    } else {
+        // Check if it's a GitHub URL
+        int is_github = repo->remote_url &&
+            (strstr(repo->remote_url, "github.com") != NULL);
+
+        if (is_github) {
+            printf("%sGitHub%s", BLUE, RESET);
+            len += 6;  // "GitHub"
+        } else {
+            printf("%sRemote configured%s", GREEN, RESET);
+            len += 17;  // "Remote configured"
+        }
+
+        if (repo->is_pushed) {
+            printf(" %s(pushed)%s", GREEN, RESET);
+            len += 9;  // " (pushed)"
+        } else {
+            printf(" %s(not pushed)%s", YELLOW, RESET);
+            len += 13;  // " (not pushed)"
+        }
+    }
+    for (int i = len; i < box_width - 2; i++) printf(" ");
+    printf("%s%s%s\n", CYAN, VERT, RESET);
+
     // Ahead/Behind info
     if (repo->ahead > 0 || repo->behind > 0) {
         printf("%s%s%s  ", CYAN, VERT, RESET);
         len = 2;
         if (repo->ahead > 0) {
-            len += printf("%s↑ %d ahead%s", GREEN, repo->ahead, RESET);
+            printf("%s↑ %d ahead%s", GREEN, repo->ahead, RESET);
+            len += snprintf(NULL, 0, "↑ %d ahead", repo->ahead);
         }
         if (repo->ahead > 0 && repo->behind > 0) {
-            len += printf("  ");
+            printf("  ");
+            len += 2;
         }
         if (repo->behind > 0) {
-            len += printf("%s↓ %d behind%s", RED, repo->behind, RESET);
+            printf("%s↓ %d behind%s", RED, repo->behind, RESET);
+            len += snprintf(NULL, 0, "↓ %d behind", repo->behind);
         }
         for (int i = len; i < box_width - 2; i++) printf(" ");
         printf("%s%s%s\n", CYAN, VERT, RESET);
@@ -340,13 +406,16 @@ void print_repo_info(GitRepo *repo, int box_width) {
     printf("%s%s%s  %sSummary:%s ", CYAN, VERT, RESET, BOLD, RESET);
     len = 11;
     if (repo->staged_count > 0) {
-        len += printf("%s%d staged%s ", GREEN, repo->staged_count, RESET);
+        printf("%s%d staged%s ", GREEN, repo->staged_count, RESET);
+        len += snprintf(NULL, 0, "%d staged ", repo->staged_count);
     }
     if (repo->unstaged_count > 0) {
-        len += printf("%s%d modified%s ", YELLOW, repo->unstaged_count, RESET);
+        printf("%s%d modified%s ", YELLOW, repo->unstaged_count, RESET);
+        len += snprintf(NULL, 0, "%d modified ", repo->unstaged_count);
     }
     if (repo->untracked_count > 0) {
-        len += printf("%s%d untracked%s", MAGENTA, repo->untracked_count, RESET);
+        printf("%s%d untracked%s", MAGENTA, repo->untracked_count, RESET);
+        len += snprintf(NULL, 0, "%d untracked", repo->untracked_count);
     }
     for (int i = len; i < box_width - 2; i++) printf(" ");
     printf("%s%s%s\n", CYAN, VERT, RESET);

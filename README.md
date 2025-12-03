@@ -8,6 +8,7 @@ A command-line tool that recursively scans directories to find git repositories 
 - Detects staged, modified, untracked, and deleted files
 - Shows current branch and remote tracking branch
 - Displays ahead/behind status relative to remote
+- Shows remote push status (whether the repo has been pushed to GitHub or other remotes)
 - Color-coded output for easy scanning
 - Unicode box-drawing characters for a clean look
 
@@ -18,6 +19,7 @@ A command-line tool that recursively scans directories to find git repositories 
 ║ /Users/you/projects/my-app                                                   ║
 ╠══════════════════════════════════════════════════════════════════════════════╣
 ║  Branch: main -> origin/main                                                 ║
+║  Remote: GitHub (pushed)                                                     ║
 ║  ↑ 2 ahead                                                                   ║
 ║  Summary: 3 staged 5 modified 2 untracked                                    ║
 ╠══════════════════════════════════════════════════════════════════════════════╣
@@ -30,13 +32,13 @@ A command-line tool that recursively scans directories to find git repositories 
 
 ## Color Coding
 
-| Color   | Meaning                |
-|---------|------------------------|
-| Green   | Staged files           |
-| Yellow  | Modified (unstaged)    |
-| Magenta | Untracked files        |
-| Red     | Deleted files          |
-| Blue    | Remote branches        |
+| Color   | Meaning                          |
+|---------|----------------------------------|
+| Green   | Staged files / Pushed to remote  |
+| Yellow  | Modified (unstaged) / Not pushed |
+| Magenta | Untracked files                  |
+| Red     | Deleted files / No remote        |
+| Blue    | Remote branches / GitHub         |
 
 ## Compiling
 
@@ -94,6 +96,7 @@ The tool displays:
 2. Each repository with uncommitted changes showing:
    - Repository path
    - Current branch and remote tracking branch
+   - Remote status: GitHub (pushed), GitHub (not pushed), Remote configured (pushed/not pushed), or No remote configured
    - Ahead/behind commit counts
    - Summary of changes (staged, modified, untracked counts)
    - List of changed files with their status
@@ -108,4 +111,3 @@ The tool displays:
 ## License
 
 MIT
-# Uncommitted
