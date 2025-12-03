@@ -1,0 +1,111 @@
+# uncommitted
+
+A command-line tool that recursively scans directories to find git repositories with uncommitted changes and displays the results in a visually appealing format.
+
+## Features
+
+- Recursively scans directories for git repositories
+- Detects staged, modified, untracked, and deleted files
+- Shows current branch and remote tracking branch
+- Displays ahead/behind status relative to remote
+- Color-coded output for easy scanning
+- Unicode box-drawing characters for a clean look
+
+## Screenshot
+
+```
+╔══════════════════════════════════════════════════════════════════════════════╗
+║ /Users/you/projects/my-app                                                   ║
+╠══════════════════════════════════════════════════════════════════════════════╣
+║  Branch: main -> origin/main                                                 ║
+║  ↑ 2 ahead                                                                   ║
+║  Summary: 3 staged 5 modified 2 untracked                                    ║
+╠══════════════════════════════════════════════════════════════════════════════╣
+║  File                                      Status                            ║
+║  src/app.js                                modified (staged)                 ║
+║  src/utils.js                              modified                          ║
+║  config.json                               untracked                         ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+```
+
+## Color Coding
+
+| Color   | Meaning                |
+|---------|------------------------|
+| Green   | Staged files           |
+| Yellow  | Modified (unstaged)    |
+| Magenta | Untracked files        |
+| Red     | Deleted files          |
+| Blue    | Remote branches        |
+
+## Compiling
+
+Compile the program using gcc:
+
+```bash
+gcc -o uncommitted uncommitted.c -Wall
+```
+
+## Installation
+
+### Recommended: /usr/local/bin (system-wide)
+
+Copy the compiled binary to `/usr/local/bin` so it's available in your PATH:
+
+```bash
+sudo cp uncommitted /usr/local/bin/
+```
+
+### Alternative: ~/bin (user-only)
+
+If you prefer not to use `sudo`, create a personal bin directory:
+
+```bash
+mkdir -p ~/bin
+cp uncommitted ~/bin/
+```
+
+Then add this line to your `~/.zshrc` (or `~/.bashrc` if using bash):
+
+```bash
+export PATH="$HOME/bin:$PATH"
+```
+
+Reload your shell configuration:
+
+```bash
+source ~/.zshrc
+```
+
+## Usage
+
+```bash
+# Scan from current directory
+uncommitted
+
+# Scan from a specific directory
+uncommitted /path/to/directory
+```
+
+## Example Output
+
+The tool displays:
+1. A header banner
+2. Each repository with uncommitted changes showing:
+   - Repository path
+   - Current branch and remote tracking branch
+   - Ahead/behind commit counts
+   - Summary of changes (staged, modified, untracked counts)
+   - List of changed files with their status
+3. A summary footer with totals across all repositories
+
+## Requirements
+
+- macOS or Linux
+- gcc compiler
+- git (installed and available in PATH)
+
+## License
+
+MIT
+# Uncommitted
