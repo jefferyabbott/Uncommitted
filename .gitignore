@@ -1,0 +1,19 @@
+# Compiled binary
+uncommitted
+
+# Object files
+*.o
+*.obj
+
+# Debug files
+*.dSYM/
+
+# Editor files
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+
+# macOS
+.DS_Store
