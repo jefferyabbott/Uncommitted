@@ -3,6 +3,7 @@
 #include <string.h>
 #include <dirent.h>
 #include <sys/stat.h>
+#include <sys/wait.h>
 #include <unistd.h>
 
 // ANSI color codes
@@ -274,6 +275,19 @@ void get_branch_info(const char *repo_path, GitRepo *repo) {
     free(line);
 }
 
+// Check if a file matches gitignore patterns (even if tracked)
+int is_gitignored(const char *repo_path, const char *filename) {
+    char *cmd = NULL;
+    size_t cmd_len = strlen(repo_path) + strlen(filename) + 100;
+    cmd = malloc(cmd_len);
+    // --no-index checks ignore rules even for tracked files
+    snprintf(cmd, cmd_len, "cd \"%s\" && git check-ignore -q --no-index \"%s\" 2>/dev/null", repo_path, filename);
+    int result = system(cmd);
+    free(cmd);
+    // git check-ignore returns 0 if the file matches ignore patterns
+    return (WIFEXITED(result) && WEXITSTATUS(result) == 0);
+}
+
 void get_git_status(const char *repo_path, GitRepo *repo) {
     char *cmd = NULL;
     size_t cmd_len;
@@ -299,6 +313,11 @@ void get_git_status(const char *repo_path, GitRepo *repo) {
             char worktree_status = line[1];
             char *filename = line + 3;
             filename[strcspn(filename, "\n")] = 0;
+
+            // Skip files that are in .gitignore
+            if (is_gitignored(repo_path, filename)) {
+                continue;
+            }
 
             // Handle staged changes
             if (index_status != ' ' && index_status != '?') {
