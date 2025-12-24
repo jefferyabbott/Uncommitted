@@ -12,6 +12,16 @@ A command-line tool that recursively scans directories to find git repositories 
 - Color-coded output for easy scanning
 - Unicode box-drawing characters for a clean look
 
+## Support This Project
+
+If you find DevBldr useful, consider buying the developer a coffee!
+
+[![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-support-yellow?style=for-the-badge&logo=buy-me-a-coffee)](https://buymeacoffee.com/jefferyabbott)
+
+**Donate**: [buymeacoffee.com/jefferyabbott](https://buymeacoffee.com/jefferyabbott)
+
+<img src="assets/buymeacoffee-qr.png" alt="Buy Me A Coffee QR Code" width="200">
+
 ## Screenshot
 
 ```
