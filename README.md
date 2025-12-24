@@ -18,8 +18,6 @@ If you find Uncommitted useful, consider buying the developer a coffee!
 
 [![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-support-yellow?style=for-the-badge&logo=buy-me-a-coffee)](https://buymeacoffee.com/jefferyabbott)
 
-**Donate**: [buymeacoffee.com/jefferyabbott](https://buymeacoffee.com/jefferyabbott)
-
 <img src="assets/buymeacoffee-qr.png" alt="Buy Me A Coffee QR Code" width="200">
 
 ## Screenshot
